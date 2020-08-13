@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
+import * as Yup from 'yup';
 import { Form } from '@unform/mobile';
 import { FormHandles } from '@unform/core';
-import * as Yup from 'yup';
+
+import { useAuth } from '../../hooks/Auth';
 
 import Input from '../../components/Input';
 import Button from '../../components/Button';
@@ -38,37 +40,40 @@ const SignIn: React.FC = () => {
   const navigation = useNavigation();
   const formRef = useRef<FormHandles>(null);
   const passwordInputReff = useRef<TextInput>(null);
-  const handleSignIn = useCallback(async (data: SignInformData) => {
-    try {
-      formRef.current?.setErrors({});
+  const { signIn } = useAuth();
 
-      const schema = Yup.object().shape({
-        email: Yup.string()
-          .required('E-mail Obrigatorio')
-          .email('Digite um E-mail valido'),
-        password: Yup.string().required('Senha Obrigatoria'),
-      });
+  const handleSignIn = useCallback(
+    async (data: SignInformData) => {
+      try {
+        formRef.current?.setErrors({});
 
-      await schema.validate(data, { abortEarly: false });
-      // await signIn({
-      //   email: data.email,
-      //   password: data.password,
-      // });
+        const schema = Yup.object().shape({
+          email: Yup.string()
+            .required('E-mail Obrigatorio')
+            .email('Digite um E-mail valido'),
+          password: Yup.string().required('Senha Obrigatoria'),
+        });
 
-      // history.push('/dashboard');
-    } catch (err) {
-      if (err instanceof Yup.ValidationError) {
-        const errors = getValidationErrors(err);
+        await schema.validate(data, { abortEarly: false });
+        await signIn({
+          email: data.email,
+          password: data.password,
+        });
+      } catch (err) {
+        if (err instanceof Yup.ValidationError) {
+          const errors = getValidationErrors(err);
 
-        formRef.current?.setErrors(errors);
+          formRef.current?.setErrors(errors);
+        }
+
+        Alert.alert(
+          'Erro na autenticacao',
+          'Ocorreu um erro ao fazer login, cheque as credenciais.',
+        );
       }
-
-      Alert.alert(
-        'Erro na autenticacao',
-        'Ocorreu um erro ao fazer login, cheque as credenciais.',
-      );
-    }
-  }, []);
+    },
+    [signIn],
+  );
 
   return (
     <>
